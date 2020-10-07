@@ -1,0 +1,78 @@
+import random
+import time
+import numpy as np
+import  pandas as pd
+import neural_network_new
+from sklearn.model_selection import train_test_split
+import xlrd
+random.seed(1)
+
+
+def SigmoidActivator(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def positive_data(data_column,data_row):
+    # data_row 为双数
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(int(data_row/2)):
+            raw_row_data.append(random.uniform(-1, 1))
+        for j in range(int(data_row/2),data_row):
+            raw_row_data.append(raw_row_data[data_row-j-1])
+        raw_row_data.append(1)
+        raw_data.append(raw_row_data)
+    return raw_data
+# print(positive_data(10,6))
+
+
+def negative_data(data_column,data_row):
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(data_row):
+            raw_row_data.append(random.uniform(-1, 1))
+        raw_row_data.append(0)
+        raw_data.append(raw_row_data)
+    return raw_data
+
+
+def negative_data_1(positive_data):
+    raw_data = positive_data
+    for i in range(len(raw_data)):
+        raw_data[i][random.choice(range(0,len(raw_data[0])-1))] = random.uniform(-1, 1)
+        raw_data[i][len(raw_data[0])-1] = 0
+    return raw_data
+
+
+def build_data(data_column,data_row):
+    data_list = positive_data(data_column,data_row) + negative_data(data_column,data_row) + negative_data_1(positive_data(data_column,data_row))
+    data = np.array(data_list)
+    return data
+
+NUM=400
+data = build_data(NUM, 6)
+
+# df = pd.read_excel('C://Users/chenhui/Desktop/BP_data.xlsx')
+# data = np.array(df)
+
+x = data[:, :-1]
+y = data[:, -1]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+
+epoch = 0
+last_error_ratio = 1.0
+network = neural_network_new.Network([6,2,1])
+for i in range(1000):
+    network.train(x_train, y_train, 0.3, 1)
+    print(i)
+
+y_predict = []
+for sample in x_test:
+    y_predict.append(network.predict(sample).item())
+
+loss = abs(y_predict - y_test).sum()
+print(loss)
+print(y_predict)
+print(y_test)
