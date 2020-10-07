@@ -1,0 +1,80 @@
+import numpy as np
+
+
+class IdentityActivator(object):
+    def forward(self, weighted_input):
+        return weighted_input
+
+    def backward(self, output):
+        return 1
+
+
+class SigmoidActivator(object):
+    def forward(self, weighted_input):
+        return 1.0 / (1.0 + np.exp(-weighted_input))
+
+    def backward(self, output):
+        return output * (1 - output)
+
+
+class FullConnectedLayer(object):
+    def __init__(self,input_size,output_size,activator):
+        self.input_size = input_size
+        self.output_size = output_size
+        self.activator = activator
+
+        self.W = np.random.uniform(-0.1,0.1,(input_size, output_size))
+        self.b = np.zeros((1, output_size))
+        self.output = np.zeros((1,output_size))
+
+    def forward(self,input_array):
+        self.input = input_array
+        self.output = self.activator.forward(np.dot(input_array, self.W) + self.b)
+
+    def backward(self,delta_array):
+        self.delta = (self.activator.backward(self.input) * np.dot(delta_array, self.W.T))
+        # print(self.input)
+        # print(delta_array)
+        self.W_grad = np.dot(self.input.T,delta_array)
+        self.b_grad = delta_array
+
+    def update(self,learning_rate):
+        self.W += learning_rate*self.W_grad
+        self.b += learning_rate*self.b_grad
+
+
+class Network(object):
+    def __init__(self,layers):
+        self.layers = []
+        for i in range(len(layers)- 1):
+            self.layers.append(
+                FullConnectedLayer(layers[i],layers[i+1],SigmoidActivator())
+            )
+
+    def train_one_sample(self,label,sample,rate):
+        self.predict(sample)
+        self.calc_gradient(label)
+        self.update_weight(rate)
+
+    def predict(self, sample):
+        output = sample
+        for layer in self.layers:
+            layer.forward(output)
+            output = layer.output
+        return output
+        
+    def calc_gradient(self,label):
+    delta = self.layers[-1].activator.backward(self.layers[-1].output)*(label-self.layers[-1].output)
+    for layer in self.layers[::-1]:
+        layer.backward(delta)
+        delta = layer.delta
+    return delta
+
+    def update_weight(self,rate):
+        for layer in self.layers:
+            layer.update(rate)
+
+    def train(self, data_set, labels, rate, iteration):
+        for i in range(iteration):
+            for d in range(len(data_set)):
+                self.train_one_sample(np.array(np.mat(labels[d])), np.array(np.mat(data_set[d])), rate)
