@@ -1,0 +1,109 @@
+import random
+import time
+import numpy as np
+import  pandas as pd
+import neural_network_new
+from sklearn.model_selection import train_test_split
+import xlrd
+random.seed(1)
+
+
+def SigmoidActivator(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def positive_data(data_column,data_row):
+    # data_row 为双数
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(int(data_row/2)):
+            raw_row_data.append(random.uniform(-1, 1))
+        for j in range(int(data_row/2),data_row):
+            raw_row_data.append(raw_row_data[data_row-j-1])
+        raw_row_data.append(1)
+        raw_data.append(raw_row_data)
+    return raw_data
+# print(positive_data(10,6))
+
+
+def negative_data(data_column,data_row):
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(data_row):
+            raw_row_data.append(random.uniform(-1, 1))
+        raw_row_data.append(0)
+        raw_data.append(raw_row_data)
+    return raw_data
+
+
+def negative_data_1(positive_data):
+    raw_data = positive_data
+    for i in range(len(raw_data)):
+        raw_data[i][random.choice(range(0,len(raw_data[0])-1))] = random.uniform(-1, 1)
+        raw_data[i][len(raw_data[0])-1] = 0
+    return raw_data
+
+
+def build_data(data_column,data_row):
+    data_list = positive_data(data_column,data_row) + negative_data(data_column,data_row) + negative_data_1(positive_data(data_column,data_row))
+    data = np.array(data_list)
+    return data
+
+NUM=400
+data = build_data(NUM, 6)
+
+# df = pd.read_excel('C://Users/chenhui/Desktop/BP_data.xlsx')
+# data = np.array(df)
+
+x = data[:, :-1]
+y = data[:, -1]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+M= 6
+N= 2
+w1 = np.random.rand(M,N)       # ones((M, N))
+b1 = np.random.rand(1,N)       # ones((1, N))
+w2 = np.random.rand(N,1)       # .ones((N, 1))
+b2 = np.random.rand(1,1)       # ones((1,1))
+learning_rate = 1
+iteration = 1000
+for i in range(iteration):
+    loss = []
+    for d in range(len(x_train)):
+        # forward
+        x = np.array(np.mat(x_train[d]))
+        y = y_train[d]
+        y1 = SigmoidActivator(np.dot(x, w1) + b1)  # 1*N
+        y2 = SigmoidActivator(np.dot(y1, w2) + b2)  # 1
+        # print(y2)
+        # print(y)
+        # backward
+        delta2 = np.array(np.mat(y2*(1 - y2)*(y-y2)))
+        grad_w2 = np.dot(y1.T, delta2)
+        grad_b2 = delta2
+        w2 = w2 + learning_rate*grad_w2
+        b2 = b2 + learning_rate*grad_b2
+
+        delta1 = y1*(1 - y1)*np.dot(delta2, w2.T)
+        grad_w1 =np.dot(x.T, delta1)
+        grad_b1 = delta1
+        w1 = w1 + learning_rate * grad_w1
+        b1 = b1 + learning_rate * grad_b1
+
+        loss.append(0.5*(y-y2)*(y-y2))
+    print(i)
+    loss_sum = 0
+    for i in loss:
+        loss_sum += i
+    print(loss_sum/NUM)
+
+# 预测
+for d in range(len(x_test)):
+    # forward
+    x = x_test[d]
+    y = y_test[d]
+    y1 = SigmoidActivator(np.dot(x, w1) + b1)  # 1*N
+    y2 = SigmoidActivator(np.dot(y1, w2) + b2)
+    print(y2)
+    print(y)
