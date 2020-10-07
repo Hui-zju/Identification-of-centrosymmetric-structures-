@@ -107,3 +107,19 @@ for d in range(len(x_test)):
     y2 = SigmoidActivator(np.dot(y1, w2) + b2)
     print(y2)
     print(y)
+
+import numpy as np
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['SimHei']#可以解释中文无法显示的问题
+x=[i for i in range(iteration)]
+plt.figure()
+plt.plot(x,loss_sum_list,label = 'learning_rate = 1')
+plt.xlabel(u'训练次数')#fill the meaning of X axis
+plt.ylabel(u'loss')#fill the meaning of Y axis
+plt.title(u'损失函数变化曲线')#add the title of the figure
+# plt.ion()#continue to plt
+# y=[i/4000 for i in range(iteration)]
+# plt.plot(x,loss_sum_list1,label = 'learning_rate = 0.1')
+plt.legend() # 显示图例
+plt.show()
+# plt.savefig("C://plot.jpg")
