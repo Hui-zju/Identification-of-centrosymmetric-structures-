@@ -1,0 +1,96 @@
+import random
+import numpy as np
+import torch
+from sklearn.model_selection import train_test_split
+import torch.nn.functional as F
+
+
+def positive_data(data_column,data_row):
+    # data_row 为双数
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(int(data_row/2)):
+            raw_row_data.append(random.uniform(-1, 1))
+        for j in range(int(data_row/2),data_row):
+            raw_row_data.append(raw_row_data[data_row-j-1])
+        raw_row_data.append(1)
+        raw_data.append(raw_row_data)
+    return raw_data
+# print(positive_data(10,6))
+
+
+def negative_data(data_column,data_row):
+    raw_data = []
+    for i in range(data_column):
+        raw_row_data = []
+        for j in range(data_row):
+            raw_row_data.append(random.uniform(-1, 1))
+        raw_row_data.append(0)
+        raw_data.append(raw_row_data)
+    return raw_data
+
+
+def negative_data_1(positive_data):
+    raw_data = positive_data
+    for i in range(len(raw_data)):
+        raw_data[i][random.choice(range(0, len(raw_data[0])-1))] = random.uniform(-1, 1)
+        raw_data[i][len(raw_data[0])-1] = 0
+    return raw_data
+
+
+def build_data(data_column,data_row):
+    data_list = positive_data(data_column,data_row) + negative_data(int(data_column/2),data_row) + negative_data_1(positive_data(int(data_column/2),data_row))
+    # data_list = positive_data(data_column, data_row) + negative_data(data_column, data_row)
+    data = np.array(data_list)
+    return data
+
+
+data = build_data(1000, 6)
+x = data[:, :-1]
+y = data[:, -1]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+
+
+trX = torch.from_numpy(x_train)
+trY = torch.from_numpy(y_train).type(torch.LongTensor)
+test_X = torch.from_numpy(x_test)
+test_Y = torch.from_numpy(y_test).type(torch.LongTensor)
+# print(trX)
+# print(trY)
+
+trX = F.normalize(trX, p=2, dim=1)
+test_X = F.normalize(test_X, p=2, dim=1)
+
+NUM_DIGITS = 6
+NUM_HIDDEN = 2
+model = torch.nn.Sequential(
+    torch.nn.Linear(NUM_DIGITS, NUM_HIDDEN),
+    torch.nn.ReLU(),
+    torch.nn.Linear(NUM_HIDDEN, 2),
+)
+model = model.double()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+loss_fn = torch.nn.CrossEntropyLoss()
+
+BATCH_SIZE = 100
+for epoch in range(10000):
+    for start in range(0, len(trX), BATCH_SIZE):
+        end = start + BATCH_SIZE
+        batchX = trX[start:end]
+        batchY = trY[start:end]
+
+        y_pred = model(batchX)
+        loss = loss_fn(y_pred, batchY)
+
+        print("Epoch", epoch, loss.item())
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+with torch.no_grad():
+    testY = model(test_X)
+
+print(testY.max(1)[1].data.tolist())
+print(test_Y)
